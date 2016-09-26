@@ -16,7 +16,7 @@ if [[ -z "$TM_FILENAME" ]]; then
   exit 0
 fi
 
-cd $TM_PROJECT_DIRECTORY
+cd "$TM_PROJECT_DIRECTORY" || exit 1
 
 filerelativepath=${TM_FILEPATH/$TM_PROJECT_DIRECTORY\//}
 gitpath="$("$TM_GIT" ls-files -- "$filerelativepath")"
