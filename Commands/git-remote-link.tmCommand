@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>beforeRunningCommand</key>
+	<string>nop</string>
+	<key>command</key>
+	<string>#!/usr/bin/env bash
+#
+# Figures out link to current file/line on remote git host.
+#
+# Currently only really supports github.
+
+if [[ -z "$TM_FILENAME" ]]; then
+  echo "Error: '${TM_DISPLAYNAME} is not tracked in git"
+  exit 0
+fi
+
+cd $TM_PROJECT_DIRECTORY
+
+filerelativepath=${TM_FILEPATH/$TM_PROJECT_DIRECTORY\//}
+gitpath="$("$TM_GIT" ls-files -- "$filerelativepath")"
+
+if [[ "$filerelativepath" != "$gitpath" ]]; then
+  echo "Error: '${TM_DISPLAYNAME} is not tracked in git"
+  exit 0
+fi
+
+repo_url="$("$TM_GIT" remote get-url origin | sed -Ee 's%git@(github.com):%https://\1/%' | perl -pe 'chomp if eof')"
+repo_branch="$(printenv TM_SCOPE | tr ' ' '\n' | awk '/attr\.scm\.branch/ { sub("attr.scm.branch.", "", $1); print $1 }')"
+
+# "16" =&gt; "L16"
+# "16-17" =&gt; "L16-L17"
+# "16:3-16:8" =&gt; "L16" # BUG - returns "L16-L16" currently. This still works on GH, so ignoring.
+# "16:3-18:3" =&gt; "L16-L18"
+line_number="$(printenv TM_SELECTION | sed -E -e 's/:[0-9]+//g' -e 's/([^0-9]|^)([0-9])/\1L\2/g')"
+
+remote_url="${repo_url}/blob/${repo_branch}/${gitpath}#${line_number}"
+echo "${remote_url}" | pbcopy
+echo "Copied '${remote_url}' to the clipboard!"
+</string>
+	<key>input</key>
+	<string>none</string>
+	<key>inputFormat</key>
+	<string>text</string>
+	<key>name</key>
+	<string>Get SCM Remote URL</string>
+	<key>outputCaret</key>
+	<string>afterOutput</string>
+	<key>outputFormat</key>
+	<string>text</string>
+	<key>outputLocation</key>
+	<string>toolTip</string>
+	<key>scope</key>
+	<string>attr.scm.git</string>
+	<key>uuid</key>
+	<string>5125DCC1-963E-4BE9-AFB7-2C6F8A28506F</string>
+	<key>version</key>
+	<integer>2</integer>
+</dict>
+</plist>
